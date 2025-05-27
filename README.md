@@ -21,9 +21,7 @@ This Streamlit app matches image timestamps with GPS coordinates and adds locati
 ## 🔗 Hosted Version
 
 > You can launch the app directly here:  
-> `https://yourusername-yourrepo-name.streamlit.app`
-
-*(Replace the URL above after deploying via [streamlit.io/cloud](https://streamlit.io/cloud))*
+> `https://photo-gpx-geotagger.streamlit.app/`
 
 ## 📦 Dependencies
 
