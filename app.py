@@ -3,7 +3,7 @@ import gpxpy
 import piexif
 from PIL import Image
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 import folium
 from streamlit_folium import st_folium
 import zipfile
@@ -61,6 +61,7 @@ def embed_gps(exif_data, lat, lon):
 
 st.set_page_config(page_title="Geotag Photos with GPX", layout="wide")
 st.title("📸 Geotag Photos Using GPX Track")
+
 st.markdown("""
 > 🌍 **Welcome to your Photo Time Machine!**  
 >  
@@ -76,14 +77,24 @@ st.markdown("""
 > **Let’s bring your adventures back to the map!**
 """)
 
+# Uploaders
+gpx_file = st.file_uploader("📂 Upload a GPX File", type=["gpx"])
+image_files = st.file_uploader("🖼️ Upload JPEG Images", type=["jpg", "jpeg"], accept_multiple_files=True)
+
+# Timezone settings
+st.markdown("#### ⏰ Photo Timestamp Settings")
+time_is_local = st.radio(
+    "Are your photo timestamps in local time?",
+    ["Yes, convert to UTC", "No, already in UTC"],
+    index=0
+)
+offset = 0
+if time_is_local == "Yes, convert to UTC":
+    offset = st.number_input("Enter timezone offset (e.g., 8 for UTC+8 / Malaysia)", value=8, step=1)
 
 # Initialize session state
 if "start_processing" not in st.session_state:
     st.session_state.start_processing = False
-
-# Uploaders
-gpx_file = st.file_uploader("Upload a GPX File", type=["gpx"])
-image_files = st.file_uploader("Upload JPEG Images", type=["jpg", "jpeg"], accept_multiple_files=True)
 
 # Trigger button
 if gpx_file and image_files and not st.session_state.start_processing:
@@ -124,11 +135,14 @@ if gpx_file and image_files and st.session_state.start_processing:
                 st.warning("⚠️ Skipping: No EXIF timestamp.")
                 continue
 
+            if time_is_local == "Yes, convert to UTC":
+                image_time -= timedelta(hours=offset)
+
             orig_lat, orig_lon = extract_gps_from_exif(exif_data)
             closest = find_closest_gpx_point(image_time, gpx_points)
 
             st.image(img.copy().resize((150, 150)))
-            st.write(f"🕒 **Image time**: `{image_time}`")
+            st.write(f"🕒 **Image time (adjusted)**: `{image_time}`")
             st.write(f"📍 **Closest GPX point**: `{closest[0]}` → (Lat: {closest[1]}, Lon: {closest[2]})")
             st.write(f"📌 **Original GPS**: {orig_lat}, {orig_lon}")
 
@@ -181,4 +195,7 @@ if gpx_file and image_files and st.session_state.start_processing:
                 popup = folium.Popup(popup_html, max_width=200)
                 folium.Marker([p["lat"], p["lon"]], tooltip=p["name"], popup=popup).add_to(cluster)
 
-            st_folium(m, width=700, height=500)
+            with st.container():
+                st_folium(m, width=700, height=500)
+
+            st.info("🧐 If the map markers are clustered incorrectly, try adjusting the timezone offset and click 🔄 Reset App to reprocess.")
