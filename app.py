@@ -181,4 +181,4 @@ if gpx_file and image_files and st.session_state.start_processing:
                 popup = folium.Popup(popup_html, max_width=200)
                 folium.Marker([p["lat"], p["lon"]], tooltip=p["name"], popup=popup).add_to(cluster)
 
-            st_folium(m, width=700, height=500, return_last_map_state=False)
+            st_folium(m, width=700, height=500)
