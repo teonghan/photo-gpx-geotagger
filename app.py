@@ -197,5 +197,4 @@ if gpx_file and image_files and st.session_state.start_processing:
 
             with st.container():
                 st_folium(m, width=700, height=500)
-
-            st.info("🧐 If the map markers are clustered incorrectly, try adjusting the timezone offset and click 🔄 Reset App to reprocess.")
+                st.info("🧐 If the map markers are clustered incorrectly, try adjusting the timezone offset and click 🔄 Reset App to reprocess.")
