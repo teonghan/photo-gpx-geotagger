@@ -3,6 +3,20 @@
 Easily geotag your JPEG images using a `.gpx` file from your GPS device or smartphone!  
 This Streamlit app matches image timestamps with GPS coordinates and adds location data directly to the image metadata (EXIF).
 
+## 🤔 Why This Exists
+
+If you've ever used Strava to record a hike and snapped photos along the way, you've probably noticed:
+- Your photos get auto-placed in the wrong spot (or not at all)
+- Phone GPS tags are unreliable or missing
+- Strava uses your phone’s weak signal instead of the accurate GPX trail
+
+This tool fixes all that.
+
+By matching the timestamp of each photo to the nearest point on your GPX track, it **accurately geotags your images**, so you can:
+- Re-upload them to Strava (or any platform)
+- Keep a precise visual record of your journey
+- Trust the map for once 🙂
+
 ## 🌟 Features
 
 - Upload a `.gpx` file and multiple JPEG images
