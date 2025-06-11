@@ -57,6 +57,18 @@ def embed_gps(exif_data, lat, lon):
     exif_data["GPS"] = gps_ifd
     return piexif.dump(exif_data)
 
+def update_exif_timestamp(exif_data, new_dt):
+    # Format to EXIF standard: YYYY:MM:DD HH:MM:SS
+    ts_str = new_dt.strftime("%Y:%m:%d %H:%M:%S").encode()
+    if "Exif" not in exif_data:
+        exif_data["Exif"] = {}
+    if "0th" not in exif_data:
+        exif_data["0th"] = {}
+    exif_data["Exif"][piexif.ExifIFD.DateTimeOriginal] = ts_str
+    exif_data["Exif"][piexif.ExifIFD.DateTimeDigitized] = ts_str
+    exif_data["0th"][piexif.ImageIFD.DateTime] = ts_str
+    return exif_data
+
 # === Streamlit UI ===
 
 st.set_page_config(page_title="Geotag Photos with GPX", layout="wide")
@@ -91,6 +103,12 @@ time_is_local = st.radio(
 offset = 0
 if time_is_local == "Yes, convert to UTC":
     offset = st.number_input("Enter timezone offset (e.g., 8 for UTC+8 / Malaysia)", value=8, step=1)
+
+fix_time_from_gpx = st.checkbox(
+    "Also fix photo timestamp to exact GPX point time (overwrites EXIF date/time with GPX match)",
+    value=False,
+    help="If checked, the photo timestamp will be set to the timestamp of the matched GPX point."
+)
 
 # Initialize session state
 if "start_processing" not in st.session_state:
@@ -146,6 +164,15 @@ if gpx_file and image_files and st.session_state.start_processing:
             st.write(f"📍 **Closest GPX point**: `{closest[0]}` → (Lat: {closest[1]}, Lon: {closest[2]})")
             st.write(f"📌 **Original GPS**: {orig_lat}, {orig_lon}")
 
+            if fix_time_from_gpx:
+                st.write(f"⏳ **New EXIF timestamp set from GPX:** `{closest[0].strftime('%Y:%m:%d %H:%M:%S')}`")
+
+            # Optionally fix timestamp to GPX point
+            if fix_time_from_gpx:
+                # closest[0] is the GPX datetime
+                exif_data = update_exif_timestamp(exif_data, closest[0])
+                st.info(f"🕒 Photo timestamp replaced with GPX time: {closest[0].strftime('%Y:%m:%d %H:%M:%S')}")
+            
             new_exif = embed_gps(exif_data, closest[1], closest[2])
             buffer = BytesIO()
             img.save(buffer, "jpeg", exif=new_exif)
