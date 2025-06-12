@@ -57,9 +57,13 @@ def embed_gps(exif_data, lat, lon):
     exif_data["GPS"] = gps_ifd
     return piexif.dump(exif_data)
 
-def update_exif_timestamp(exif_data, new_dt):
-    # Format to EXIF standard: YYYY:MM:DD HH:MM:SS
-    ts_str = new_dt.strftime("%Y:%m:%d %H:%M:%S").encode()
+def update_exif_timestamp(exif_data, new_dt, tz_offset_hours=0):
+    """
+    Updates EXIF date/time fields to a new datetime, optionally adjusting for timezone.
+    tz_offset_hours: the number of hours to add (positive for UTC+8, negative for UTC-3, etc.)
+    """
+    local_dt = new_dt + timedelta(hours=tz_offset_hours)
+    ts_str = local_dt.strftime("%Y:%m:%d %H:%M:%S").encode()
     if "Exif" not in exif_data:
         exif_data["Exif"] = {}
     if "0th" not in exif_data:
@@ -108,6 +112,13 @@ fix_time_from_gpx = st.checkbox(
     "Also fix photo timestamp to exact GPX point time (overwrites EXIF date/time with GPX match)",
     value=False,
     help="If checked, the photo timestamp will be set to the timestamp of the matched GPX point."
+)
+
+st.markdown("#### 📝 Timestamp in EXIF (Output) Settings")
+output_offset = st.number_input(
+    "Enter the timezone offset to write in EXIF (e.g., 8 for UTC+8 / Malaysia)",
+    value=8,
+    step=1
 )
 
 # Initialize session state
@@ -169,10 +180,12 @@ if gpx_file and image_files and st.session_state.start_processing:
 
             # Optionally fix timestamp to GPX point
             if fix_time_from_gpx:
-                # closest[0] is the GPX datetime
-                exif_data = update_exif_timestamp(exif_data, closest[0])
-                st.info(f"🕒 Photo timestamp replaced with GPX time: {closest[0].strftime('%Y:%m:%d %H:%M:%S')}")
-            
+                exif_data = update_exif_timestamp(exif_data, closest[0], tz_offset_hours=output_offset)
+                st.info(
+                    f"🕒 Photo timestamp replaced with GPX time: "
+                    f"{(closest[0] + timedelta(hours=output_offset)).strftime('%Y:%m:%d %H:%M:%S')}"
+                )
+
             new_exif = embed_gps(exif_data, closest[1], closest[2])
             buffer = BytesIO()
             img.save(buffer, "jpeg", exif=new_exif)
